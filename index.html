@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SVG Converter</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        line-height: 1.6;
+        color: #2c3e50;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 1rem;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        font-weight: 300;
+        letter-spacing: -0.5px;
+      }
+
+      .header p {
+        opacity: 0.9;
+        margin-top: 0.5rem;
+        font-size: 1.1rem;
+      }
+
+      .main-content {
+        padding: 2rem;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        .workspace {
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+
+        .main-content {
+          padding: 1.5rem;
+        }
+
+        .header {
+          padding: 1.5rem;
+        }
+      }
+
+      .section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e9ecef;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #495057;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .section-title::before {
+        content: "";
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border-radius: 2px;
+      }
+
+      #svgInput {
+        width: 100%;
+        height: 300px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        font-family: "Monaco", "Menlo", monospace;
+        font-size: 0.9rem;
+        resize: vertical;
+        background: white;
+        transition: border-color 0.2s ease;
+      }
+
+      #svgInput:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      #svgPreview {
+        width: 100%;
+        height: 300px;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        overflow: hidden;
+        position: relative;
+      }
+
+      #svgPreview.has-content {
+        border-style: solid;
+        border-color: #28a745;
+      }
+
+      .preview-placeholder {
+        color: #6c757d;
+        text-align: center;
+        font-style: italic;
+      }
+
+      .controls-panel {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e9ecef;
+      }
+
+      .controls-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .control-group label {
+        font-weight: 500;
+        color: #495057;
+        font-size: 0.9rem;
+      }
+
+      .input-with-unit {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .control-group input,
+      .control-group select {
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: white;
+        transition: border-color 0.2s ease;
+      }
+
+      .control-group input:focus,
+      .control-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+      }
+
+      .unit-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 500;
+        min-width: 25px;
+      }
+
+      .download-section {
+        text-align: center;
+      }
+
+      .download-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-width: 120px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(44, 62, 80, 0.3);
+      }
+
+      .btn:disabled {
+        background: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      @media (max-width: 480px) {
+        .controls-grid {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .download-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .btn {
+          width: 100%;
+          max-width: 200px;
+        }
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+      }
+
+      .status-ready {
+        background: #28a745;
+      }
+
+      .status-waiting {
+        background: #ffc107;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>SVG Converter</h1>
+        <p>Convert SVG graphics to multiple formats with custom dimensions</p>
+      </div>
+
+      <div class="main-content">
+        <div class="workspace">
+          <div class="section">
+            <div class="section-title">
+              <span
+                class="status-indicator status-waiting"
+                id="statusIndicator"
+              ></span>
+              SVG Input
+            </div>
+            <textarea
+              id="svgInput"
+              placeholder="Paste your SVG code here...&#10;&#10;Example:&#10;<svg width='100' height='100' xmlns='http://www.w3.org/2000/svg'>&#10;  <circle cx='50' cy='50' r='40' fill='#667eea'/>&#10;</svg>"
+            ></textarea>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Live Preview</div>
+            <div id="svgPreview">
+              <div class="preview-placeholder">
+                SVG preview will appear here
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls-panel">
+          <div class="section-title">Export Settings</div>
+
+          <div class="controls-grid">
+            <div class="control-group">
+              <label for="widthInput">Width</label>
+              <div class="input-with-unit">
+                <input
+                  type="number"
+                  id="widthInput"
+                  value="1500"
+                  min="1"
+                  max="10000"
+                />
+                <span class="unit-label">px</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="heightInput">Height</label>
+              <div class="input-with-unit">
+                <input
+                  type="number"
+                  id="heightInput"
+                  value="840"
+                  min="1"
+                  max="10000"
+                />
+                <span class="unit-label">px</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="scaleInput">Quality Scale</label>
+              <div class="input-with-unit">
+                <input
+                  type="number"
+                  id="scaleInput"
+                  value="2"
+                  min="1"
+                  max="8"
+                  step="0.5"
+                />
+                <span class="unit-label">x</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="formatSelect">Output Format</label>
+              <select id="formatSelect">
+                <option value="png">PNG (Recommended)</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WebP</option>
+                <option value="svg">SVG (Original)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="download-section">
+            <div class="download-buttons">
+              <button class="btn btn-primary" id="downloadButton" disabled>
+                Download Image
+              </button>
+              <button class="btn btn-secondary" id="downloadAllButton" disabled>
+                Download All Formats
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var svgInput = document.getElementById("svgInput");
+      var svgPreview = document.getElementById("svgPreview");
+      var downloadButton = document.getElementById("downloadButton");
+      var downloadAllButton = document.getElementById("downloadAllButton");
+      var widthInput = document.getElementById("widthInput");
+      var heightInput = document.getElementById("heightInput");
+      var scaleInput = document.getElementById("scaleInput");
+      var formatSelect = document.getElementById("formatSelect");
+      var statusIndicator = document.getElementById("statusIndicator");
+
+      svgInput.addEventListener("input", updatePreview);
+      downloadButton.addEventListener("click", downloadSingle);
+      downloadAllButton.addEventListener("click", downloadAll);
+
+      function updatePreview() {
+        var svgCode = svgInput.value.trim();
+
+        if (svgCode && svgCode.includes("<svg")) {
+          svgPreview.innerHTML = svgCode;
+          svgPreview.classList.add("has-content");
+          downloadButton.disabled = false;
+          downloadAllButton.disabled = false;
+          statusIndicator.className = "status-indicator status-ready";
+        } else {
+          svgPreview.innerHTML =
+            '<div class="preview-placeholder">SVG preview will appear here</div>';
+          svgPreview.classList.remove("has-content");
+          downloadButton.disabled = true;
+          downloadAllButton.disabled = true;
+          statusIndicator.className = "status-indicator status-waiting";
+        }
+      }
+
+      function downloadSingle() {
+        var format = formatSelect.value;
+        var svgElement = svgPreview.querySelector("svg");
+        if (!svgElement) return;
+
+        if (format === "svg") {
+          downloadSVG(svgElement);
+        } else {
+          downloadRasterFormat(svgElement, format);
+        }
+      }
+
+      function downloadAll() {
+        var svgElement = svgPreview.querySelector("svg");
+        if (!svgElement) return;
+
+        var formats = ["png", "jpeg", "webp", "svg"];
+        var delay = 500;
+
+        formats.forEach(function processFormat(format, index) {
+          setTimeout(function executeDownload() {
+            if (format === "svg") {
+              downloadSVG(svgElement);
+            } else {
+              downloadRasterFormat(svgElement, format);
+            }
+          }, index * delay);
+        });
+      }
+
+      function downloadSVG(svgElement) {
+        var svgData = new XMLSerializer().serializeToString(svgElement);
+        var blob = new Blob([svgData], { type: "image/svg+xml" });
+        var url = URL.createObjectURL(blob);
+
+        var downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = "image.svg";
+        downloadLink.click();
+
+        URL.revokeObjectURL(url);
+      }
+
+      function downloadRasterFormat(svgElement, format) {
+        var svgData = new XMLSerializer().serializeToString(svgElement);
+        var canvas = document.createElement("canvas");
+        var downloadWidth = parseInt(widthInput.value) || 1500;
+        var downloadHeight = parseInt(heightInput.value) || 840;
+        var scaleFactor = parseFloat(scaleInput.value) || 2;
+
+        canvas.width = downloadWidth * scaleFactor;
+        canvas.height = downloadHeight * scaleFactor;
+
+        var ctx = canvas.getContext("2d");
+
+        if (format === "jpeg") {
+          ctx.fillStyle = "white";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        var img = new Image();
+
+        img.onload = function handleImageLoad() {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          var mimeType = "image/" + format;
+          var quality = format === "jpeg" ? 0.9 : undefined;
+          var dataUrl = canvas.toDataURL(mimeType, quality);
+
+          var downloadLink = document.createElement("a");
+          downloadLink.href = dataUrl;
+          downloadLink.download = "image." + format;
+          downloadLink.click();
+        };
+
+        img.src =
+          "data:image/svg+xml;base64," +
+          btoa(unescape(encodeURIComponent(svgData)));
+      }
+    </script>
+  </body>
+</html>
